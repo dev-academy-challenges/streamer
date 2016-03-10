@@ -1,4 +1,5 @@
 import React, { Component } from 'react'
+import io from 'socket.io-client'
 
 import { head, tail } from 'ramda'
 
@@ -17,10 +18,17 @@ class App extends Component {
     // easily extend this to include player names, etc.
     // The current game is at the head of the games list!
     this.state = {
-      games: [
-        { moves: [] }
-      ]
+      games: []
     }
+  }
+
+  componentWillMount () {
+    this.socket = io.connect('http://localhost:3000/')
+    this.socket.on('new game', (data) => {
+      this.setState({
+        games: [ { id: data.id, moves: data.moves }, ...this.state.games ]
+      })
+    })
   }
 
   makeMove (square) {
@@ -38,6 +46,8 @@ class App extends Component {
     // out as the remaining items in the games array.
     this.setState({
       games: [ { moves: [ ...thisGame.moves, square ] }, ...oldGames ]
+    }, () => {
+      this.socket.emit('move', { id: 1, moves: this.state.games[0].moves })
     })
   }
 
@@ -51,10 +61,12 @@ class App extends Component {
 
   // Our current game is always at the 0 index in our games array! Clever, no?
   render () {
+    const moves = this.state.games[0] ? this.state.games[0].moves : []
+
     return <div className='app'>
       <Header/>
       <Board
-        moves={this.state.games[0].moves}
+        moves={moves}
         clickCb={this.makeMove.bind(this)}
       />
       <ResetButton clickCb={this.newGame.bind(this)}/>

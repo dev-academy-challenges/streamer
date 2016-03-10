@@ -1,22 +1,22 @@
-'use strict'
+import express from 'express'
+import http from 'http'
+import socketio from 'socket.io'
+import bodyParser from 'body-parser'
+import dotenv from 'dotenv'
+import knex from 'knex'
 
-require('dotenv').config()
+const port = process.env.PORT || 3000
+const static_path = './public'
+const app = express()
+const server = http.Server(app)
+const io = socketio(server)
 
-// Set default node environment to development
-process.env.NODE_ENV = process.env.NODE_ENV || 'development'
+dotenv.load()
 
-var express    = require('express') // import express.js
-var bodyParser = require('body-parser') // parse request bodies
-var path       = require('path')
-
-var app    = express() // create the express application
-var server = require('http').createServer(app) // create the server
-
+app.use(express.static(static_path))
 app.use(bodyParser.json())
-app.use(bodyParser.urlencoded({ extended: false }))
-app.use(express.static(path.join(__dirname, 'public')))
 
-var knex = require('knex')({
+const db = knex({
   client: 'pg',
   connection: process.env.PG_CONNECTION_STRING,
   searchPath: 'knex,public',
@@ -26,13 +26,29 @@ var knex = require('knex')({
   }
 })
 
-// Start the app only when run with npm start
-// Don't run it when imported into the tests
-if (require.main === module) {
-  server.listen(3000, function () {
-    console.log('Streamer now running at port 3000!')
+app.get('/', (req, res) => {
+  res.sendFile('index.html', {
+    root: static_path
   })
-}
+})
 
-// For testing purposes
-exports = module.exports = app
+io.on('connection', (socket) => {
+  console.log('we got connected!')
+
+  db('games').insert({ moves: '[]' }).returning('*').then((data) => {
+    console.log('data', data)
+    socket.emit('new game', data)
+  })
+
+  socket.on('move', (data) => {
+    console.log('gotta move!', data)
+  })
+
+  socket.on('disconnect', () => {
+    console.log('Hasta!')
+  })
+})
+
+server.listen(port, () => {
+  console.log(`Streamer running on port ${port}`)
+})

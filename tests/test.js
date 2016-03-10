@@ -24,8 +24,11 @@ import Square from '../src/components/square.jsx'
 test('App mount', (t) => {
   const wrapper = mount(<App/>)
 
-  console.log('Found Board?', wrapper.find(Board).nodes)
-  console.log('Found Squares?', wrapper.find(Square).nodes)
+  wrapper.find(Square).at(4).simulate('click')
+  wrapper.find(Square).at(3).simulate('click')
+  wrapper.find(Square).at(0).simulate('click')
+
+  console.log(wrapper.state().games[0].moves)
 
   t.end()
 })
