@@ -24,9 +24,11 @@ class App extends Component {
 
   componentWillMount () {
     this.socket = io.connect('http://localhost:3000/')
+    this.socket.emit('new game')
     this.socket.on('new game', (data) => {
+      console.log('new game data', data)
       this.setState({
-        games: [ { id: data.id, moves: data.moves }, ...this.state.games ]
+        games: [ { id: data[0].id, moves: data[0].moves }, ...this.state.games ]
       })
     })
   }
@@ -45,9 +47,14 @@ class App extends Component {
     // game with our new, updated version, and then spreading the old games
     // out as the remaining items in the games array.
     this.setState({
-      games: [ { moves: [ ...thisGame.moves, square ] }, ...oldGames ]
+      games: [
+        { id: thisGame.id, moves: [ ...thisGame.moves, square ] },
+        ...oldGames
+      ]
     }, () => {
-      this.socket.emit('move', { id: 1, moves: this.state.games[0].moves })
+      let updated = head(this.state.games)
+
+      this.socket.emit('move', { id: updated.id, moves: updated.moves })
     })
   }
 

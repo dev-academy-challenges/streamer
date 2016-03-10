@@ -35,13 +35,26 @@ app.get('/', (req, res) => {
 io.on('connection', (socket) => {
   console.log('we got connected!')
 
-  db('games').insert({ moves: '[]' }).returning('*').then((data) => {
-    console.log('data', data)
-    socket.emit('new game', data)
+  socket.on('new game', () => {
+    db('games').insert({ moves: '[]' }).returning('*').then((data) => {
+      console.log('data', data)
+      socket.emit('new game', data)
+    })
   })
 
   socket.on('move', (data) => {
-    console.log('gotta move!', data)
+    const qry = db('games')
+      .where({ id: data.id })
+      .update({ moves: JSON.stringify(data.moves) })
+      .returning('*')
+
+    console.log('gotta move!', data, qry.toSQL())
+
+    qry.then((rows) => {
+      console.log('updated', rows)
+    }).catch((err) => {
+      console.log('fuck you', err)
+    })
   })
 
   socket.on('disconnect', () => {

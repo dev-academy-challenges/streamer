@@ -34567,9 +34567,11 @@ var App = function (_Component) {
       var _this2 = this;
 
       this.socket = _socket2.default.connect('http://localhost:3000/');
+      this.socket.emit('new game');
       this.socket.on('new game', function (data) {
+        console.log('new game data', data);
         _this2.setState({
-          games: [{ id: data.id, moves: data.moves }].concat(_toConsumableArray(_this2.state.games))
+          games: [{ id: data[0].id, moves: data[0].moves }].concat(_toConsumableArray(_this2.state.games))
         });
       });
     }
@@ -34591,9 +34593,11 @@ var App = function (_Component) {
       // game with our new, updated version, and then spreading the old games
       // out as the remaining items in the games array.
       this.setState({
-        games: [{ moves: [].concat(_toConsumableArray(thisGame.moves), [square]) }].concat(_toConsumableArray(oldGames))
+        games: [{ id: thisGame.id, moves: [].concat(_toConsumableArray(thisGame.moves), [square]) }].concat(_toConsumableArray(oldGames))
       }, function () {
-        _this3.socket.emit('move', { id: 1, moves: _this3.state.games[0].moves });
+        var updated = (0, _ramda.head)(_this3.state.games);
+
+        _this3.socket.emit('move', { id: updated.id, moves: updated.moves });
       });
     }
   }, {
